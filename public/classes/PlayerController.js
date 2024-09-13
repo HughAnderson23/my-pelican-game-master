@@ -26,5 +26,9 @@ export class PlayerController {
             this.character.mesh.position.z
         );
     }
+    grow() {
+        // Delegate grow to the character instance
+        this.character.grow();
+    }
 }
 

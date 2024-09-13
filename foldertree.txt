@@ -21,10 +21,3 @@ C:.
         |   GameWorld.js
         |   PlayerController.js
         |   Score.js
-        |   
-        \---extended
-                Consumable.js
-                Sharkpool.js
-    |
-    \---managers
-        |   NetworkingManager.js
