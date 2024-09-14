@@ -1,7 +1,7 @@
 import { PlayerController } from './classes/PlayerController.js';
 import * as THREE from '/node_modules/three/build/three.module.js';
 
-const socket = io('https://my-pelican-game-master-e2eee1009e58.herokuapp.com/');
+const socket = io('https://my-pelican-game-master-e2eee1009e58.herokuapp.com');
 
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();

@@ -17,7 +17,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Enable CORS to allow requests from your frontend (e.g., hosted on Vercel)
-app.use(cors({ origin: 'https://my-pelican-game-master.vercel.app/' })); // Replace with actual frontend URL
+app.use(cors({ origin: 'https://my-pelican-game-master.vercel.app' })); // Replace with actual frontend URL
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
