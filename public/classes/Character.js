@@ -16,7 +16,7 @@ export class Character {
     }
 
     checkCollision(target) {
-        const box1 = new THREE.Box3().setFromObject(this.mesh);
+        const box1 = new THREE.Box3().setFromObject(this.mesh).expandByScalar(this.size); // Scale the collision box by size
         const box2 = new THREE.Box3().setFromObject(target.mesh);
         return box1.intersectsBox(box2);
     }

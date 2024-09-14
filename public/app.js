@@ -8,8 +8,16 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.getElementById('gameCanvas').appendChild(renderer.domElement);
 
+// Load the custom texture (blueprint-style)
+const textureLoader = new THREE.TextureLoader();
+const blueprintTexture = textureLoader.load('/textures/blueprint-grid.png', function (texture) {
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(3, 3); // Repeat pattern to fit the ground
+});
+
+// Create a material using the custom texture
+const groundMaterial = new THREE.MeshBasicMaterial({ map: blueprintTexture, side: THREE.DoubleSide });
 const groundGeometry = new THREE.PlaneGeometry(500, 500);
-const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x336699, side: THREE.DoubleSide });
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotation.x = Math.PI / 2;
 scene.add(ground);

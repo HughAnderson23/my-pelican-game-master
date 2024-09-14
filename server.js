@@ -43,31 +43,36 @@ io.on('connection', (socket) => {
 
     socket.on('move', (data) => {
         gameWorld.updatePlayerPosition(socket.id, data.x, data.z);
-
+    
         // Check for collisions with consumables
         for (let i = consumables.length - 1; i >= 0; i--) {
             const consumable = consumables[i];
-            const playerPos = gameWorld.getPlayerPosition(socket.id);
+            const player = gameWorld.getPlayer(socket.id);
+            const playerSize = player.size || 1; // Default size is 1 if not specified
+    
+            const playerPos = { x: player.x, z: player.z };
             const dist = Math.sqrt(Math.pow(playerPos.x - consumable.x, 2) + Math.pow(playerPos.z - consumable.z, 2));
-
-            if (dist < 2) {
+    
+            // Adjust the collision size to be proportional to the player's size
+            if (dist < playerSize) { // Adjust collision range to player's size
                 consumables.splice(i, 1); // Remove the consumed consumable
                 io.emit('consumableConsumed', { id: socket.id, x: consumable.x, z: consumable.z });
-
+    
                 // After 10 seconds, respawn a new consumable
                 setTimeout(() => {
                     const newConsumable = generateConsumable();
                     consumables.push(newConsumable);
                     io.emit('spawnConsumable', newConsumable); // Notify all clients of the new consumable
                 }, 10000); // 10 seconds delay for respawning
-
-                gameWorld.updatePlayerSize(socket.id, data.size);
+    
+                gameWorld.updatePlayerSize(socket.id, player.size); // Update the player's size in the game world
                 io.emit('gameState', { players: gameWorld.getPlayers() });
             }
         }
-
+    
         io.emit('gameState', { players: gameWorld.getPlayers() });
     });
+    
 
     socket.on('updateSize', (data) => {
         gameWorld.updatePlayerSize(socket.id, data.size);

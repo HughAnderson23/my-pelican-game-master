@@ -28,6 +28,10 @@ export class GameWorld {
         return this.players;
     }
 
+    getPlayer(id) {
+        return this.players[id]; // Return the player object, including size
+    }
+
     getPlayerPosition(id) {
         if (this.players[id]) {
             return { x: this.players[id].x, z: this.players[id].z };
