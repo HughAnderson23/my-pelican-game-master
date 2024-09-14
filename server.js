@@ -11,18 +11,23 @@ app.use(express.static('public'));
 app.use('/node_modules', express.static('node_modules'));
 
 const gameWorld = new GameWorld();
-const consumables = [];
+let consumables = [];
 
-// Function to randomly generate consumables in the game world
-function generateConsumables() {
+// Function to generate a new consumable at a random location
+function generateConsumable() {
+    const x = Math.random() * 500 - 250;
+    const z = Math.random() * 500 - 250;
+    return { x, z };
+}
+
+// Function to generate the initial set of consumables
+function generateInitialConsumables() {
     for (let i = 0; i < 20; i++) {
-        const x = Math.random() * 500 - 250;
-        const z = Math.random() * 500 - 250;
-        consumables.push({ x, z });
+        consumables.push(generateConsumable());
     }
 }
 
-generateConsumables();
+generateInitialConsumables();
 
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
@@ -39,16 +44,23 @@ io.on('connection', (socket) => {
     socket.on('move', (data) => {
         gameWorld.updatePlayerPosition(socket.id, data.x, data.z);
 
+        // Check for collisions with consumables
         for (let i = consumables.length - 1; i >= 0; i--) {
             const consumable = consumables[i];
             const playerPos = gameWorld.getPlayerPosition(socket.id);
             const dist = Math.sqrt(Math.pow(playerPos.x - consumable.x, 2) + Math.pow(playerPos.z - consumable.z, 2));
 
             if (dist < 2) {
-                consumables.splice(i, 1);
+                consumables.splice(i, 1); // Remove the consumed consumable
                 io.emit('consumableConsumed', { id: socket.id, x: consumable.x, z: consumable.z });
 
-                // When the player consumes, we also broadcast their updated size
+                // After 10 seconds, respawn a new consumable
+                setTimeout(() => {
+                    const newConsumable = generateConsumable();
+                    consumables.push(newConsumable);
+                    io.emit('spawnConsumable', newConsumable); // Notify all clients of the new consumable
+                }, 10000); // 10 seconds delay for respawning
+
                 gameWorld.updatePlayerSize(socket.id, data.size);
                 io.emit('gameState', { players: gameWorld.getPlayers() });
             }
@@ -58,8 +70,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('updateSize', (data) => {
-        gameWorld.updatePlayerSize(socket.id, data.size); // Update the size on the server
-        io.emit('gameState', { players: gameWorld.getPlayers() }); // Broadcast updated game state to all clients
+        gameWorld.updatePlayerSize(socket.id, data.size);
+        io.emit('gameState', { players: gameWorld.getPlayers() });
     });
 
     socket.on('disconnect', () => {

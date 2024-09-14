@@ -17,7 +17,6 @@ C:.
     |   
     \---classes
         |   Character.js
-        |   GameObject.js
         |   GameWorld.js
         |   PlayerController.js
         |   Score.js

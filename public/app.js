@@ -42,6 +42,16 @@ socket.on('spawnConsumables', (data) => {
     });
 });
 
+// Listen for newly spawned consumables
+socket.on('spawnConsumable', (data) => {
+    const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+    const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+    const consumable = new THREE.Mesh(geometry, material);
+    consumable.position.set(data.x, 0.5, data.z);
+    scene.add(consumable);
+    consumables.push(consumable); // Add to the consumables array
+});
+
 socket.on('consumableConsumed', (data) => {
     consumables = consumables.filter((consumable) => {
         if (consumable.position.x === data.x && consumable.position.z === data.z) {
