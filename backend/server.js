@@ -1,14 +1,27 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import { GameWorld } from './public/classes/GameWorld.js'; // Ensure this path is correct
+import path from 'path';
+import cors from 'cors';
+import { GameWorld } from '../public/classes/GameWorld.js'; // Adjust the path accordingly
+
+// Define __dirname for ES modules
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static('public'));
-app.use('/node_modules', express.static('node_modules'));
+// Enable CORS to allow requests from your frontend (e.g., hosted on Vercel)
+app.use(cors({ origin: 'https://your-game.vercel.app' })); // Replace with actual frontend URL
+
+// Serve static files
+app.use(express.static(path.join(__dirname, '../public')));
+app.use('/node_modules', express.static(path.join(__dirname, '../node_modules')));
 
 const gameWorld = new GameWorld();
 let consumables = [];
@@ -90,3 +103,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
