@@ -46,7 +46,7 @@ socket.on('registerPlayer', (data) => {
 socket.on('spawnConsumables', (data) => {
     data.forEach((consumableData) => {
         const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+        const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
         const consumable = new THREE.Mesh(geometry, material);
         consumable.position.set(consumableData.x, 0.5, consumableData.z);
         scene.add(consumable);
@@ -57,7 +57,7 @@ socket.on('spawnConsumables', (data) => {
 // Listen for newly spawned consumables
 socket.on('spawnConsumable', (data) => {
     const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-    const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+    const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
     const consumable = new THREE.Mesh(geometry, material);
     consumable.position.set(data.x, 0.5, data.z);
     scene.add(consumable);
@@ -82,7 +82,12 @@ socket.on('consumableConsumed', (data) => {
 
 socket.on('gameState', (data) => {
     Object.keys(data.players).forEach((id) => {
-        if (id === playerController.id) return;
+        if (id === playerController.id) {
+            // Update client 1's own size in the browser
+            playerController.character.mesh.scale.set(data.players[id].size, data.players[id].size, data.players[id].size);
+            playerController.character.size = data.players[id].size; // Ensure local size is synchronized
+            return;
+        }
 
         if (players[id]) {
             players[id].character.mesh.position.set(data.players[id].x, 1, data.players[id].z);
@@ -102,6 +107,21 @@ socket.on('gameState', (data) => {
             console.log(`Player ${id} removed from scene`);
         }
     });
+});
+
+socket.on('eaten', (data) => {
+    alert('You were eaten by another player!');
+    
+    // Reset player size and position
+    playerController.character.size = 1; // Reset size
+    playerController.character.mesh.scale.set(1, 1, 1); // Reset mesh size
+    playerController.character.mesh.position.set(
+        Math.random() * 500 - 250,
+        0.5,
+        Math.random() * 500 - 250
+    ); // Respawn player at a random location
+
+    socket.emit('updateSize', { size: playerController.character.size });
 });
 
 window.addEventListener('resize', () => {

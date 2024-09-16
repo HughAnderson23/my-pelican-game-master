@@ -38,4 +38,15 @@ export class GameWorld {
         }
         return null;
     }
+
+    resetPlayer(id) {
+        const player = this.getPlayer(id);
+        if (player) {
+            player.size = 1; // Reset size
+            player.x = Math.random() * 500 - 250;
+            player.z = Math.random() * 500 - 250;
+        }
+    }
 }
+
+

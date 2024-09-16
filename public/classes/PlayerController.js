@@ -19,8 +19,13 @@ export class PlayerController {
     }
 
     updatePosition(targetPosition) {
-        this.character.mesh.position.lerp(targetPosition, 0.015); // lerp = player starting speed
-        this.camera.position.set(
+        // Adjust the speed based on the player's size
+        const speedFactor = 1 / Math.sqrt(this.character.size); // Use square root for a slower decrease
+
+        // Apply the lerp factor based on size
+        this.character.mesh.position.lerp(targetPosition, 0.015 * speedFactor); // Decrease movement speed as size increases
+        
+    this.camera.position.set(
             this.character.mesh.position.x,
             this.camera.position.y,
             this.character.mesh.position.z

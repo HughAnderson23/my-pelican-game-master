@@ -95,6 +95,35 @@ io.on('connection', (socket) => {
                 io.emit('gameState', { players: gameWorld.getPlayers() });
             }
         }
+
+            // Check for player eating
+            const player = gameWorld.getPlayer(socket.id);
+            if (!player) return;
+
+            for (const otherPlayerId in gameWorld.getPlayers()) {
+                if (otherPlayerId !== socket.id) {
+                    const otherPlayer = gameWorld.getPlayer(otherPlayerId);
+                    if (!otherPlayer) continue;
+
+                    const distance = Math.sqrt(
+                        Math.pow(player.x - otherPlayer.x, 2) + Math.pow(player.z - otherPlayer.z, 2)
+                    );
+
+                    if (distance < player.size && player.size > otherPlayer.size) {
+                        // Notify the eaten player
+                        io.to(otherPlayerId).emit('eaten', { by: socket.id });
+
+                        // Reset the eaten player instead of removing them
+                        gameWorld.resetPlayer(otherPlayerId);
+
+                        // Increase the size of the player who "ate"
+                     player.size += otherPlayer.size;
+                        gameWorld.updatePlayerSize(socket.id, player.size);
+
+                        io.emit('gameState', { players: gameWorld.getPlayers() });
+                    }
+                }
+            }
     
         io.emit('gameState', { players: gameWorld.getPlayers() });
     });
