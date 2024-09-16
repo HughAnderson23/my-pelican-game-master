@@ -14,10 +14,23 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
 // Enable CORS to allow requests from your frontend (e.g., hosted on Vercel)
-app.use(cors({ origin: 'https://my-pelican-game-master.vercel.app' })); // Replace with actual frontend URL
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://my-pelican-game-master.vercel.app'], // Allow both localhost and Vercel
+    methods: ['GET', 'POST'],  // Specify allowed methods if needed
+    credentials: true          // If you need credentials support (e.g., cookies or authorization headers)
+}));
+
+// Socket.IO with CORS enabled
+const io = new Server(server, {
+    cors: {
+        origin: ['http://localhost:3000', 'https://my-pelican-game-master.vercel.app'],
+        methods: ['GET', 'POST'],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'] // Ensure websocket and polling transports are handled
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));

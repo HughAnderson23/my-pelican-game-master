@@ -19,7 +19,7 @@ export class PlayerController {
     }
 
     updatePosition(targetPosition) {
-        this.character.mesh.position.lerp(targetPosition, 0.1);
+        this.character.mesh.position.lerp(targetPosition, 0.015); // lerp = player starting speed
         this.camera.position.set(
             this.character.mesh.position.x,
             this.camera.position.y,
