@@ -68,70 +68,83 @@ io.on('connection', (socket) => {
     socket.emit('spawnConsumables', consumables);
 
     socket.on('move', (data) => {
-        gameWorld.updatePlayerPosition(socket.id, data.x, data.z);
-    
+        gameWorld.updatePlayerPosition(socket.id, data.characters);
+        const merged = gameWorld.checkForMerge(socket.id);
+        if (merged) {
+            io.emit('playerMerged', {
+                playerId: socket.id,
+                characters: gameWorld.getPlayer(socket.id).characters
+            });
+        }
+
         // Check for collisions with consumables
         for (let i = consumables.length - 1; i >= 0; i--) {
             const consumable = consumables[i];
             const player = gameWorld.getPlayer(socket.id);
-            const playerSize = player.size || 1; // Default size is 1 if not specified
+            
+            for (const character of player.characters) {
+                const dist = Math.sqrt(Math.pow(character.x - consumable.x, 2) + Math.pow(character.z - consumable.z, 2));
     
-            const playerPos = { x: player.x, z: player.z };
-            const dist = Math.sqrt(Math.pow(playerPos.x - consumable.x, 2) + Math.pow(playerPos.z - consumable.z, 2));
+                if (dist < character.size) {
+                    consumables.splice(i, 1);
+                    io.emit('consumableConsumed', { id: socket.id, x: consumable.x, z: consumable.z });
     
-            // Adjust the collision size to be proportional to the player's size
-            if (dist < playerSize) { // Adjust collision range to player's size
-                consumables.splice(i, 1); // Remove the consumed consumable
-                io.emit('consumableConsumed', { id: socket.id, x: consumable.x, z: consumable.z });
+                    setTimeout(() => {
+                        const newConsumable = generateConsumable();
+                        consumables.push(newConsumable);
+                        io.emit('spawnConsumable', newConsumable);
+                    }, 10000);
     
-                // After 10 seconds, respawn a new consumable
-                setTimeout(() => {
-                    const newConsumable = generateConsumable();
-                    consumables.push(newConsumable);
-                    io.emit('spawnConsumable', newConsumable); // Notify all clients of the new consumable
-                }, 10000); // 10 seconds delay for respawning
-    
-                gameWorld.updatePlayerSize(socket.id, player.size); // Update the player's size in the game world
-                io.emit('gameState', { players: gameWorld.getPlayers() });
+                    gameWorld.growPlayer(socket.id, character.size * 0.1);
+                    break;
+                }
             }
         }
 
-            // Check for player eating
-            const player = gameWorld.getPlayer(socket.id);
-            if (!player) return;
+        // Check for player eating
+        const player = gameWorld.getPlayer(socket.id);
+        if (!player) return;
 
-            for (const otherPlayerId in gameWorld.getPlayers()) {
-                if (otherPlayerId !== socket.id) {
-                    const otherPlayer = gameWorld.getPlayer(otherPlayerId);
-                    if (!otherPlayer) continue;
+        for (const otherPlayerId in gameWorld.getPlayers()) {
+            if (otherPlayerId !== socket.id) {
+                const otherPlayer = gameWorld.getPlayer(otherPlayerId);
+                if (!otherPlayer) continue;
 
-                    const distance = Math.sqrt(
-                        Math.pow(player.x - otherPlayer.x, 2) + Math.pow(player.z - otherPlayer.z, 2)
-                    );
+                for (const character of player.characters) {
+                    for (const otherCharacter of otherPlayer.characters) {
+                        const distance = Math.sqrt(
+                            Math.pow(character.x - otherCharacter.x, 2) + 
+                            Math.pow(character.z - otherCharacter.z, 2)
+                        );
 
-                    if (distance < player.size && player.size > otherPlayer.size) {
-                        // Notify the eaten player
-                        io.to(otherPlayerId).emit('eaten', { by: socket.id });
-
-                        // Reset the eaten player instead of removing them
-                        gameWorld.resetPlayer(otherPlayerId);
-
-                        // Increase the size of the player who "ate"
-                     player.size += otherPlayer.size;
-                        gameWorld.updatePlayerSize(socket.id, player.size);
-
-                        io.emit('gameState', { players: gameWorld.getPlayers() });
+                        if (distance < character.size && character.size > otherCharacter.size * 1.1) {
+                            gameWorld.eatCharacter(socket.id, otherPlayerId, character, otherCharacter);
+                            io.to(otherPlayerId).emit('characterEaten', { 
+                                eatenBy: socket.id, 
+                                eatenCharIndex: otherPlayer.characters.indexOf(otherCharacter)
+                            });
+                            if (otherPlayer.characters.length === 0) {
+                                io.to(otherPlayerId).emit('playerEaten', { eatenBy: socket.id });
+                            }
+                        }
                     }
                 }
             }
-    
+        }
+
         io.emit('gameState', { players: gameWorld.getPlayers() });
     });
-    
 
-    socket.on('updateSize', (data) => {
-        gameWorld.updatePlayerSize(socket.id, data.size);
-        io.emit('gameState', { players: gameWorld.getPlayers() });
+    socket.on('split', (data) => {
+        const splitResult = gameWorld.splitPlayer(socket.id);
+        if (splitResult.split) {
+            io.emit('playerSplit', {
+                playerId: socket.id,
+                newCharacters: splitResult.newCharacters,
+                allCharacters: splitResult.allCharacters
+            });
+            io.emit('gameState', { players: gameWorld.getPlayers() });
+        }
     });
 
     socket.on('disconnect', () => {
@@ -139,10 +152,13 @@ io.on('connection', (socket) => {
         gameWorld.removePlayer(socket.id);
         io.emit('gameState', { players: gameWorld.getPlayers() });
     });
+
+    setInterval(() => {
+        io.emit('gameState', { players: gameWorld.getPlayers() });
+    }, 1000 / 30); // 30 times per second
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-
