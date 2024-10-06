@@ -27,7 +27,7 @@ export class PlayerController {
         this.targetPosition.set(newTargetPosition.x, 0, newTargetPosition.z);
         
         this.characters.forEach((char) => {
-            const speedFactor = 1 / Math.sqrt(char.size);
+            const speedFactor = 2 * (1 / Math.sqrt(char.size));
             const direction = new THREE.Vector3()
                 .subVectors(this.targetPosition, char.mesh.position)
                 .normalize();

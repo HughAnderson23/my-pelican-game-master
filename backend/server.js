@@ -48,7 +48,7 @@ function generateConsumable() {
 
 // Function to generate the initial set of consumables
 function generateInitialConsumables() {
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
         consumables.push(generateConsumable());
     }
 }
@@ -155,7 +155,7 @@ io.on('connection', (socket) => {
 
     setInterval(() => {
         io.emit('gameState', { players: gameWorld.getPlayers() });
-    }, 1000 / 30); // 30 times per second
+    }, 1000 / 10); // 10 times per second
 });
 
 const PORT = process.env.PORT || 3000;
