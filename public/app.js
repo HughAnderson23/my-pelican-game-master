@@ -32,6 +32,7 @@ let players = {};
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 let consumables = [];
+let sharkPools = [];
 
 document.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -92,6 +93,21 @@ socket.on('consumableConsumed', (data) => {
         }
         return true;
     });
+});
+
+socket.on('spawnSharkPools', (data) => {
+    data.forEach((sharkPoolData) => {
+        const geometry = new THREE.SphereGeometry(sharkPoolData.size, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+        const sharkPool = new THREE.Mesh(geometry, material);
+        sharkPool.position.set(sharkPoolData.x, sharkPoolData.size, sharkPoolData.z);
+        scene.add(sharkPool);
+        sharkPools.push(sharkPool);
+    });
+});
+
+socket.on('playerRespawned', (data) => {
+    playerController.updateCharacters(data.characters);
 });
 
 socket.on('characterEaten', (data) => {

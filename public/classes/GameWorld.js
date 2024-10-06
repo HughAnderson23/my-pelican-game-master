@@ -2,6 +2,8 @@ export class GameWorld {
     constructor() {
         this.players = {};
         this.mergeTimeout = 10000; // 10 seconds before merging
+        this.sharkPools = [];
+        this.maxSharkPools = 7;
     }
 
     addPlayer(id, color) {
@@ -116,5 +118,46 @@ export class GameWorld {
 
     getPlayer(id) {
         return this.players[id];
+    }
+
+    initializeSharkPools() {
+        for (let i = 0; i < this.maxSharkPools; i++) {
+            this.addSharkPool();
+        }
+    }
+
+    addSharkPool() {
+        const x = Math.random() * 500 - 250;
+        const z = Math.random() * 500 - 250;
+        this.sharkPools.push({ x, z, size: 10 }); // Size 10 is an example, adjust as needed
+    }
+
+    checkSharkPoolCollision(player) {
+        for (const sharkPool of this.sharkPools) {
+            for (const character of player.characters) {
+                const distance = Math.sqrt(
+                    Math.pow(character.x - sharkPool.x, 2) + 
+                    Math.pow(character.z - sharkPool.z, 2)
+                );
+                if (distance < character.size + sharkPool.size) {
+                    return true; // Collision detected
+                }
+            }
+        }
+        return false; // No collision
+    }
+
+    respawnPlayer(id) {
+        if (this.players[id]) {
+            this.players[id].characters = [{
+                x: Math.random() * 500 - 250,
+                z: Math.random() * 500 - 250,
+                size: 1
+            }];
+        }
+    }
+
+    getSharkPools() {
+        return this.sharkPools;
     }
 }

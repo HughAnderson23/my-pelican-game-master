@@ -54,6 +54,8 @@ function generateInitialConsumables() {
 }
 
 generateInitialConsumables();
+// Initialize SharkPools
+gameWorld.initializeSharkPools();
 
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
@@ -66,6 +68,7 @@ io.on('connection', (socket) => {
     });
 
     socket.emit('spawnConsumables', consumables);
+    socket.emit('spawnSharkPools', gameWorld.getSharkPools());
 
     socket.on('move', (data) => {
         gameWorld.updatePlayerPosition(socket.id, data.characters);
@@ -101,6 +104,12 @@ io.on('connection', (socket) => {
             }
         }
 
+        // Check for SharkPool collision
+        if (gameWorld.checkSharkPoolCollision(gameWorld.getPlayer(socket.id))) {
+            gameWorld.respawnPlayer(socket.id);
+            io.to(socket.id).emit('playerRespawned', gameWorld.getPlayer(socket.id));
+        }
+
         // Check for player eating
         const player = gameWorld.getPlayer(socket.id);
         if (!player) return;
@@ -132,7 +141,10 @@ io.on('connection', (socket) => {
             }
         }
 
-        io.emit('gameState', { players: gameWorld.getPlayers() });
+        io.emit('gameState', { 
+            players: gameWorld.getPlayers(),
+            sharkPools: gameWorld.getSharkPools()
+         });
     });
 
     socket.on('split', (data) => {
