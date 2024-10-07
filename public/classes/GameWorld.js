@@ -10,8 +10,15 @@ export class GameWorld {
         this.players[id] = { 
             id, 
             color, 
+            name: 'Anonymous',
             characters: [{ x: 0, z: 0, size: 1 }]
         };
+    }
+
+    setPlayerName(id, name) {
+        if (this.players[id]) {
+            this.players[id].name = name;
+        }
     }
 
     removePlayer(id) {

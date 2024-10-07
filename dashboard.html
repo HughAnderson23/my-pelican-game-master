@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pelican Game Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .dashboard {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .controls, .rules {
+            text-align: left;
+            margin-bottom: 1rem;
+        }
+        input {
+            margin: 1rem 0;
+            padding: 0.5rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <h1>Welcome to Pelican Game</h1>
+        <div class="controls">
+            <h2>Controls:</h2>
+            <ul>
+                <li>Move your mouse to control direction</li>
+                <li>Press spacebar to split</li>
+            </ul>
+        </div>
+        <div class="rules">
+            <h2>Rules:</h2>
+            <ul>
+                <li>Eat smaller players to grow</li>
+                <li>Avoid larger players</li>
+                <li>Beware of SharkPools (red spheres) - they will respawn you!</li>
+            </ul>
+        </div>
+        <input type="text" id="playerName" placeholder="Enter your name">
+        <button id="playButton">Play Game</button>
+    </div>
+    <script>
+        document.getElementById('playButton').addEventListener('click', function() {
+            const playerName = document.getElementById('playerName').value;
+            if (playerName.trim() !== '') {
+                localStorage.setItem('playerName', playerName);
+                window.location.href = 'game.html';
+            } else {
+                alert('Please enter a name before playing.');
+            }
+        });
+    </script>
+</body>
+</html>

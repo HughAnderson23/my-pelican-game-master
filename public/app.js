@@ -33,6 +33,7 @@ let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
 let consumables = [];
 let sharkPools = [];
+let playerName = localStorage.getItem('playerName') || 'Anonymous';
 
 document.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -56,9 +57,30 @@ document.addEventListener('keydown', (event) => {
 });
 
 socket.on('registerPlayer', (data) => {
-    playerController = new PlayerController(data.id, 0x3498db, data.position.x, data.position.z, scene);
+    playerController = new PlayerController(data.id, 0x3498db, data.position.x, data.position.z, scene, playerName);
     playerController.characters.forEach(char => scene.add(char.mesh));
     console.log("Player created and added to scene", playerController);
+    
+    // Emit player name to server
+    socket.emit('setPlayerName', { name: playerName });
+});
+
+socket.on('playerJoined', (data) => {
+    if (!players[data.id]) {
+        players[data.id] = new PlayerController(data.id, 0x3498db, data.characters[0].x, data.characters[0].z, scene, data.name);
+        players[data.id].updateCharacters(data.characters);
+    } else {
+        players[data.id].playerName = data.name;
+        players[data.id].updateNameSprite(data.name);
+    }
+});
+
+socket.on('playerLeft', (data) => {
+    if (players[data.id]) {
+        players[data.id].characters.forEach(char => scene.remove(char.mesh));
+        scene.remove(players[data.id].nameSprite);
+        delete players[data.id];
+    }
 });
 
 socket.on('spawnConsumables', (data) => {
@@ -160,7 +182,12 @@ function updateGameState(data) {
             playerController.updateCharacters(data.players[id].characters);
         } else {
             if (!players[id]) {
-                players[id] = new PlayerController(id, 0x3498db, data.players[id].characters[0].x, data.players[id].characters[0].z, scene);
+                players[id] = new PlayerController(id, 0x3498db, data.players[id].characters[0].x, data.players[id].characters[0].z, scene, data.players[id].name);
+            } else {
+                // Update the player's name if it has changed
+                if (players[id].playerName !== data.players[id].name) {
+                    players[id].updateNameSprite(data.players[id].name);
+                }
             }
             players[id].updateCharacters(data.players[id].characters);
         }
@@ -170,6 +197,7 @@ function updateGameState(data) {
     Object.keys(players).forEach((id) => {
         if (!data.players[id]) {
             players[id].characters.forEach(char => scene.remove(char.mesh));
+            scene.remove(players[id].nameSprite);
             delete players[id];
         }
     });
@@ -226,6 +254,13 @@ function animate() {
                 }))
             });
         }
+        // Update player name positions
+         if (playerController) {
+             playerController.updateNamePosition();
+         }
+            Object.values(players).forEach(player => {
+             player.updateNamePosition();
+            });
 
         // Update other players
         Object.values(players).forEach(player => {
@@ -238,7 +273,7 @@ function animate() {
         const center = playerController.getCharactersCenter();
         playerController.camera.position.set(center.x, playerController.camera.position.y, center.z);
 
-        renderer.render(scene, playerController.camera);
+        renderer.render(scene, playerController ? playerController.camera : camera);
     }
 }
 

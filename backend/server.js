@@ -36,6 +36,16 @@ const io = new Server(server, {
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/node_modules', express.static(path.join(__dirname, '../node_modules')));
 
+// Serve the dashboard as the main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'dashboard.html'));
+});
+
+// Serve the game page
+app.get('/game', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'game.html'));
+});
+
 const gameWorld = new GameWorld();
 let consumables = [];
 
@@ -69,6 +79,28 @@ io.on('connection', (socket) => {
 
     socket.emit('spawnConsumables', consumables);
     socket.emit('spawnSharkPools', gameWorld.getSharkPools());
+
+    // Send existing players' information to the new player
+    const existingPlayers = gameWorld.getPlayers();
+    for (const playerId in existingPlayers) {
+        if (playerId !== socket.id) {
+            socket.emit('playerJoined', {
+                id: playerId,
+                name: existingPlayers[playerId].name,
+                characters: existingPlayers[playerId].characters
+            });
+        }
+    }
+
+    socket.on('setPlayerName', (data) => {
+        gameWorld.setPlayerName(socket.id, data.name);
+        // Broadcast the new player's name to all other players
+        socket.broadcast.emit('playerJoined', {
+            id: socket.id,
+            name: data.name,
+            characters: gameWorld.getPlayer(socket.id).characters
+        });
+    });
 
     socket.on('move', (data) => {
         gameWorld.updatePlayerPosition(socket.id, data.characters);
@@ -162,6 +194,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);
         gameWorld.removePlayer(socket.id);
+        io.emit('playerLeft', { id: socket.id });
         io.emit('gameState', { players: gameWorld.getPlayers() });
     });
 

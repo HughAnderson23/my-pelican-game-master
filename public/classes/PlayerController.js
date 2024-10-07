@@ -2,7 +2,7 @@ import * as THREE from '/node_modules/three/build/three.module.js';
 import { Character } from './Character.js';
 
 export class PlayerController {
-    constructor(playerId, color, startX, startZ, scene) {
+    constructor(playerId, color, startX, startZ, scene, playerName) {
         this.scene = scene;
         this.id = playerId;
         this.color = color;
@@ -21,6 +21,9 @@ export class PlayerController {
         this.mergeTimeout = 10000; // 10 seconds before merging
         this.targetPosition = new THREE.Vector3(startX, 0, startZ);
         this.lerpFactor = 0.1; // Adjust this value to change movement smoothness
+        this.playerName = playerName;
+        this.nameSprite = this.createNameSprite(playerName);
+        this.scene.add(this.nameSprite);
     }
 
     updatePosition(newTargetPosition) {
@@ -46,6 +49,40 @@ export class PlayerController {
         // Update camera position to the center of all character pieces
         const center = this.getCharactersCenter();
         this.camera.position.set(center.x, this.camera.position.y, center.z);
+    }
+
+    createNameSprite(name) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 256;
+        canvas.height = 128;
+        context.font = 'Bold 48px Arial';
+        context.fillStyle = 'white';
+        context.textAlign = 'center';
+        context.fillText(name, 128, 64);
+        
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        
+        const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMaterial);
+        sprite.scale.set(20, 10, 1);  // Increased scale for larger text
+        
+        return sprite;
+    }
+
+    updateNamePosition() {
+        if (this.characters.length > 0) {
+            const characterCenter = this.getCharactersCenter();
+            this.nameSprite.position.set(characterCenter.x, characterCenter.y + this.characters[0].size + 4, characterCenter.z);
+        }
+    }
+
+    updateNameSprite(newName) {
+        this.playerName = newName;
+        this.scene.remove(this.nameSprite);
+        this.nameSprite = this.createNameSprite(newName);
+        this.scene.add(this.nameSprite);
     }
 
     checkForMerge() {
