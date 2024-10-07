@@ -180,6 +180,10 @@ socket.on('playerMerged', (data) => {
     }
 });
 
+socket.on('heartbeat', () => {
+    socket.emit('heartbeat');
+});
+
 function updateGameState(data) {
     Object.keys(data.players).forEach((id) => {
         if (id === playerController.id) {
