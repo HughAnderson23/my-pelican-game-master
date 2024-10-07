@@ -30,7 +30,7 @@ export class PlayerController {
         this.targetPosition.set(newTargetPosition.x, 0, newTargetPosition.z);
         
         this.characters.forEach((char) => {
-            const speedFactor = 2 * (1 / Math.sqrt(char.size));
+            const speedFactor = 3 * (1 / Math.sqrt(char.size));
             const direction = new THREE.Vector3()
                 .subVectors(this.targetPosition, char.mesh.position)
                 .normalize();
@@ -41,7 +41,7 @@ export class PlayerController {
                 this.lerpFactor
             );
 
-            char.update(30); // Assume 60 FPS, so deltaTime is about 16ms
+            char.update(60); // Assume 60 FPS, so deltaTime is about 16ms
         });
 
         this.checkForMerge();
