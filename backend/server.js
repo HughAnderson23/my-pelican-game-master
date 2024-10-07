@@ -131,6 +131,7 @@ io.on('connection', (socket) => {
                     }, 10000);
     
                     gameWorld.growPlayer(socket.id, character.size * 0.1);
+                    io.emit('playerGrew', { id: socket.id, characters: gameWorld.getPlayer(socket.id).characters });
                     break;
                 }
             }

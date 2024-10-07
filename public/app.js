@@ -107,14 +107,18 @@ socket.on('consumableConsumed', (data) => {
     consumables = consumables.filter((consumable) => {
         if (consumable.position.x === data.x && consumable.position.z === data.z) {
             scene.remove(consumable);
-            if (data.id === playerController.id) {
-                playerController.grow();
-                socket.emit('updateSize', { size: playerController.characters[0].size });
-            }
             return false;
         }
         return true;
     });
+});
+
+socket.on('playerGrew', (data) => {
+    if (data.id === playerController.id) {
+        playerController.updateCharacters(data.characters);
+    } else if (players[data.id]) {
+        players[data.id].updateCharacters(data.characters);
+    }
 });
 
 socket.on('spawnSharkPools', (data) => {
