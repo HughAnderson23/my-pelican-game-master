@@ -200,7 +200,7 @@ io.on('connection', (socket) => {
 
     setInterval(() => {
         io.emit('gameState', { players: gameWorld.getPlayers() });
-    }, 1000 / 10); // 10 times per second
+    }, 1000 / 30); // 30 times per second
 });
 
 const PORT = process.env.PORT || 3000;
