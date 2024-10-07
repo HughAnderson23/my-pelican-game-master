@@ -194,18 +194,18 @@ io.on('connection', (socket) => {
         }
     });
 
-        // Set up interval for sending heartbeats
-        const heartbeatInterval = setInterval(() => {
-            socket.emit('heartbeat');
-        }, 30000); // Send a heartbeat every 30 seconds
+        // // Set up interval for sending heartbeats
+        // const heartbeatInterval = setInterval(() => {
+        //     socket.emit('heartbeat');
+        // }, 30000); // Send a heartbeat every 30 seconds
     
-        socket.on('heartbeat', () => {
-            // Client is still alive
-            console.log('Received heartbeat from client:', socket.id);
-        });
+        // socket.on('heartbeat', () => {
+        //     // Client is still alive
+        //     console.log('Received heartbeat from client:', socket.id);
+        // });
 
     socket.on('disconnect', () => {
-        clearInterval(heartbeatInterval);
+        // clearInterval(heartbeatInterval);
         console.log(`User disconnected: ${socket.id}`);
         gameWorld.removePlayer(socket.id);
         io.emit('playerLeft', { id: socket.id });
