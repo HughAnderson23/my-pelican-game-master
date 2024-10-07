@@ -41,7 +41,7 @@ export class PlayerController {
                 this.lerpFactor
             );
 
-            char.update(16); // Assume 60 FPS, so deltaTime is about 16ms
+            char.update(1); // Assume 60 FPS, so deltaTime is about 16ms
         });
 
         this.checkForMerge();
