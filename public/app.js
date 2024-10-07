@@ -207,34 +207,34 @@ function updateGameState(data) {
     });
 }
 
-function updatePlayerCharacters(player, serverCharacters) {
-    // Update existing characters
-    player.characters.forEach((char, index) => {
-        if (serverCharacters[index]) {
-            char.mesh.position.set(
-                serverCharacters[index].x,
-                1,
-                serverCharacters[index].z
-            );
-            char.size = serverCharacters[index].size;
-            char.mesh.scale.set(char.size, char.size, char.size);
-        }
-    });
+// function updatePlayerCharacters(player, serverCharacters) {
+//     // Update existing characters
+//     player.characters.forEach((char, index) => {
+//         if (serverCharacters[index]) {
+//             char.mesh.position.set(
+//                 serverCharacters[index].x,
+//                 1,
+//                 serverCharacters[index].z
+//             );
+//             char.size = serverCharacters[index].size;
+//             char.mesh.scale.set(char.size, char.size, char.size);
+//         }
+//     });
 
-    // Add new characters
-    while (player.characters.length < serverCharacters.length) {
-        const newCharData = serverCharacters[player.characters.length];
-        const newChar = new Character(player.color, newCharData.x, newCharData.z, newCharData.size);
-        player.characters.push(newChar);
-        scene.add(newChar.mesh);
-    }
+//     // Add new characters
+//     while (player.characters.length < serverCharacters.length) {
+//         const newCharData = serverCharacters[player.characters.length];
+//         const newChar = new Character(player.color, newCharData.x, newCharData.z, newCharData.size);
+//         player.characters.push(newChar);
+//         scene.add(newChar.mesh);
+//     }
 
-    // Remove extra characters
-    while (player.characters.length > serverCharacters.length) {
-        const removedChar = player.characters.pop();
-        scene.remove(removedChar.mesh);
-    }
-}
+//     // Remove extra characters
+//     while (player.characters.length > serverCharacters.length) {
+//         const removedChar = player.characters.pop();
+//         scene.remove(removedChar.mesh);
+//     }
+// }
 
 socket.on('gameState', updateGameState);
 
