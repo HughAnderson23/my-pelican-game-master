@@ -29,7 +29,9 @@ const io = new Server(server, {
         methods: ['GET', 'POST'],
         credentials: true
     },
-    transports: ['websocket', 'polling'] // Ensure websocket and polling transports are handled
+    transports: ['websocket', 'polling'], // Ensure websocket and polling transports are handled
+    pingTimeout: 60000, // 60 seconds
+    pingInterval: 25000 // 25 seconds
 });
 
 // Serve static files
@@ -201,7 +203,7 @@ io.on('connection', (socket) => {
 
     setInterval(() => {
         io.emit('gameState', { players: gameWorld.getPlayers() });
-    }, 1000 / 60); // updates times per second
+    }, 1000 / 30); // updates times per second
 });
 
 const PORT = process.env.PORT || 3000;

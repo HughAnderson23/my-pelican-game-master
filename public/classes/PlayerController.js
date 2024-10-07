@@ -20,7 +20,7 @@ export class PlayerController {
         this.lastSplitTime = 0;
         this.mergeTimeout = 10000; // 10 seconds before merging
         this.targetPosition = new THREE.Vector3(startX, 0, startZ);
-        this.lerpFactor = 0.1; // Adjust this value to change movement smoothness
+        this.lerpFactor = 0.07; // Adjust this value to change movement smoothness
         this.playerName = playerName;
         this.nameSprite = this.createNameSprite(playerName);
         this.scene.add(this.nameSprite);
@@ -41,7 +41,7 @@ export class PlayerController {
                 this.lerpFactor
             );
 
-            char.update(0); // Assume 60 FPS, so deltaTime is about 16ms
+            char.update(16); // Assume 60 FPS, so deltaTime is about 16ms
         });
 
         this.checkForMerge();
