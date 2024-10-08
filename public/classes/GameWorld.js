@@ -11,7 +11,8 @@ export class GameWorld {
             id, 
             color, 
             name: 'Anonymous',
-            characters: [{ x: 0, z: 0, size: 1 }]
+            characters: [{ x: 0, z: 0, size: 1 }],
+            lastSplitTime: 0
         };
     }
 
@@ -28,8 +29,9 @@ export class GameWorld {
     updatePlayerPosition(id, characters) {
         if (this.players[id]) {
             this.players[id].characters = characters;
-            this.checkForMerge(id);
+            return this.checkForMerge(id);
         }
+        return false;
     }
 
     growPlayer(id, amount) {
@@ -43,8 +45,8 @@ export class GameWorld {
     checkForMerge(id) {
         const player = this.players[id];
         const now = Date.now();
-        if (player.lastSplitTime && now - player.lastSplitTime < this.mergeTimeout) {
-            return; // Not enough time has passed for merging
+        if (now - player.lastSplitTime < this.mergeTimeout) {
+            return false; // Not enough time has passed for merging
         }
 
         const merged = [];
@@ -65,14 +67,14 @@ export class GameWorld {
             }
         }
         player.characters = player.characters.filter((_, index) => !merged.includes(index));
-        if (merged.length > 0) {
-            return true; // Indicate that a merge occurred
-        }
-        return false;
+        return merged.length > 0;
     }
 
     splitPlayer(id) {
         if (this.players[id]) {
+            const now = Date.now();
+            if (now - this.players[id].lastSplitTime < 5000) return { split: false }; // Prevent splitting too frequently
+
             const newCharacters = [];
             this.players[id].characters.forEach(char => {
                 if (char.size >= 2) {
@@ -91,6 +93,7 @@ export class GameWorld {
             });
             if (newCharacters.length > 0) {
                 this.players[id].characters = this.players[id].characters.concat(newCharacters);
+                this.players[id].lastSplitTime = now;
                 return { split: true, newCharacters, allCharacters: this.players[id].characters };
             }
         }

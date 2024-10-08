@@ -42,17 +42,14 @@ document.addEventListener('mousemove', (event) => {
 
 document.addEventListener('keydown', (event) => {
     if (event.code === 'Space' && playerController) {
-        const newCharacters = playerController.split();
-        if (newCharacters && newCharacters.length > 0) {
-            socket.emit('split', { 
-                id: playerController.id,
-                characters: playerController.characters.map(char => ({
-                    x: char.mesh.position.x,
-                    z: char.mesh.position.z,
-                    size: char.size
-                }))
-            });
-        }
+        socket.emit('split', { 
+            id: playerController.id,
+            characters: playerController.characters.map(char => ({
+                x: char.mesh.position.x,
+                z: char.mesh.position.z,
+                size: char.size
+            }))
+        });
     }
 });
 
@@ -180,10 +177,6 @@ socket.on('playerMerged', (data) => {
     }
 });
 
-// socket.on('heartbeat', () => {
-//     socket.emit('heartbeat');
-// });
-
 function updateGameState(data) {
     Object.keys(data.players).forEach((id) => {
         if (id === playerController.id) {
@@ -211,35 +204,6 @@ function updateGameState(data) {
     });
 }
 
-// function updatePlayerCharacters(player, serverCharacters) {
-//     // Update existing characters
-//     player.characters.forEach((char, index) => {
-//         if (serverCharacters[index]) {
-//             char.mesh.position.set(
-//                 serverCharacters[index].x,
-//                 1,
-//                 serverCharacters[index].z
-//             );
-//             char.size = serverCharacters[index].size;
-//             char.mesh.scale.set(char.size, char.size, char.size);
-//         }
-//     });
-
-//     // Add new characters
-//     while (player.characters.length < serverCharacters.length) {
-//         const newCharData = serverCharacters[player.characters.length];
-//         const newChar = new Character(player.color, newCharData.x, newCharData.z, newCharData.size);
-//         player.characters.push(newChar);
-//         scene.add(newChar.mesh);
-//     }
-
-//     // Remove extra characters
-//     while (player.characters.length > serverCharacters.length) {
-//         const removedChar = player.characters.pop();
-//         scene.remove(removedChar.mesh);
-//     }
-// }
-
 socket.on('gameState', updateGameState);
 
 function animate() {
@@ -263,12 +227,12 @@ function animate() {
             });
         }
         // Update player name positions
-         if (playerController) {
-             playerController.updateNamePosition();
-         }
-            Object.values(players).forEach(player => {
-             player.updateNamePosition();
-            });
+        if (playerController) {
+            playerController.updateNamePosition();
+        }
+        Object.values(players).forEach(player => {
+            player.updateNamePosition();
+        });
 
         // Update other players
         Object.values(players).forEach(player => {

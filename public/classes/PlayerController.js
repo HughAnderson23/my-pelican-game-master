@@ -17,8 +17,6 @@ export class PlayerController {
         this.camera.position.set(0, 50, 0);
         this.camera.lookAt(this.characters[0].mesh.position);
 
-        this.lastSplitTime = 0;
-        this.mergeTimeout = 10000; // 10 seconds before merging
         this.targetPosition = new THREE.Vector3(startX, 0, startZ);
         this.lerpFactor = 0.07; // Adjust this value to change movement smoothness
         this.playerName = playerName;
@@ -43,8 +41,6 @@ export class PlayerController {
 
             char.update(8); // Assume 60 FPS, so deltaTime is about 16ms
         });
-
-        this.checkForMerge();
 
         // Update camera position to the center of all character pieces
         const center = this.getCharactersCenter();
@@ -83,68 +79,6 @@ export class PlayerController {
         this.scene.remove(this.nameSprite);
         this.nameSprite = this.createNameSprite(newName);
         this.scene.add(this.nameSprite);
-    }
-
-    checkForMerge() {
-        const now = Date.now();
-        if (now - this.lastSplitTime < this.mergeTimeout) {
-            return; // Not enough time has passed for merging
-        }
-
-        const mergedIndices = new Set();
-        for (let i = 0; i < this.characters.length; i++) {
-            if (mergedIndices.has(i)) continue;
-            for (let j = i + 1; j < this.characters.length; j++) {
-                if (mergedIndices.has(j)) continue;
-                const char1 = this.characters[i];
-                const char2 = this.characters[j];
-                const distance = char1.mesh.position.distanceTo(char2.mesh.position);
-                if (distance < char1.size + char2.size) {
-                    // Merge these characters
-                    const newSize = Math.sqrt(char1.size ** 2 + char2.size ** 2);
-                    char1.size = newSize;
-                    char1.mesh.scale.set(newSize, newSize, newSize);
-                    char1.mesh.position.lerp(char2.mesh.position, 0.5);
-                    
-                    // Remove the second character
-                    char2.dispose();
-                    this.scene.remove(char2.mesh);
-                    mergedIndices.add(j);
-                }
-            }
-        }
-
-        // Remove merged characters
-        this.characters = this.characters.filter((_, index) => !mergedIndices.has(index));
-    }
-
-    split() {
-        const now = Date.now();
-        if (now - this.lastSplitTime < 5000) return []; // Prevent splitting too frequently
-    
-        const newCharacters = [];
-        this.characters.forEach(char => {
-            if (char.size >= 2) {
-                const newSize = char.size / 2;
-                char.size = newSize;
-                char.mesh.scale.set(newSize, newSize, newSize);
-    
-                const splitChar = new Character(this.color, char.mesh.position.x, char.mesh.position.z, newSize);
-                
-                // Calculate a new position for the split character
-                const angle = Math.random() * Math.PI * 2;
-                const distance = char.size * 4; // Increased distance for more visible separation
-                splitChar.mesh.position.x += Math.cos(angle) * distance;
-                splitChar.mesh.position.z += Math.sin(angle) * distance;
-    
-                newCharacters.push(splitChar);
-                this.scene.add(splitChar.mesh);
-            }
-        });
-        this.characters = this.characters.concat(newCharacters);
-        this.lastSplitTime = now;
-    
-        return newCharacters;
     }
 
     updateCharacters(characterData) {
