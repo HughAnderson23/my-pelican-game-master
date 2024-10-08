@@ -24,29 +24,6 @@ export class PlayerController {
         this.scene.add(this.nameSprite);
     }
 
-    updatePosition(newTargetPosition) {
-        this.targetPosition.set(newTargetPosition.x, 0, newTargetPosition.z);
-        
-        this.characters.forEach((char) => {
-            const speedFactor = 3 * (1 / Math.sqrt(char.size));
-            const direction = new THREE.Vector3()
-                .subVectors(this.targetPosition, char.mesh.position)
-                .normalize();
-
-            // Move towards the target position with lerp
-            char.mesh.position.lerp(
-                char.mesh.position.clone().add(direction.multiplyScalar(0.5 * speedFactor)),
-                this.lerpFactor
-            );
-
-            char.update(8); // Assume 60 FPS, so deltaTime is about 16ms
-        });
-
-        // Update camera position to the center of all character pieces
-        const center = this.getCharactersCenter();
-        this.camera.position.set(center.x, this.camera.position.y, center.z);
-    }
-
     createNameSprite(name) {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -88,8 +65,30 @@ export class PlayerController {
         // Create new characters based on the received data
         this.characters = characterData.map(charData => {
             const char = new Character(this.color, charData.x, charData.z, charData.size);
+            char.direction = charData.direction || { x: 0, z: 0 }; // Changed y to z here
+            char.speed = charData.speed || 0;
+            char.splitVelocity = charData.splitVelocity;
+            char.mergeTarget = charData.mergeTarget;
             this.scene.add(char.mesh);
             return char;
+        });
+    }
+
+    updateCharacterPositions() {
+        this.characters.forEach(char => {
+            if (char.mergeTarget) {
+                // Move towards merge target
+                const dx = char.mergeTarget.x - char.mesh.position.x;
+                const dz = char.mergeTarget.z - char.mesh.position.z;
+                const distance = Math.sqrt(dx * dx + dz * dz);
+                if (distance > 0.1) {
+                    char.mesh.position.x += dx * 0.1;
+                    char.mesh.position.z += dz * 0.1;
+                } else {
+                    char.mesh.position.x = char.mergeTarget.x;
+                    char.mesh.position.z = char.mergeTarget.z;
+                }
+            }
         });
     }
 

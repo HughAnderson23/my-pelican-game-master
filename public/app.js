@@ -13,14 +13,12 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.getElementById('gameCanvas').appendChild(renderer.domElement);
 
-// Load the custom texture (blueprint-style)
 const textureLoader = new THREE.TextureLoader();
 const blueprintTexture = textureLoader.load('/textures/blueprint-grid.png', function (texture) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(3, 3); // Repeat pattern to fit the ground
+    texture.repeat.set(3, 3);
 });
 
-// Create a material using the custom texture
 const groundMaterial = new THREE.MeshBasicMaterial({ map: blueprintTexture, side: THREE.DoubleSide });
 const groundGeometry = new THREE.PlaneGeometry(500, 500);
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -42,14 +40,7 @@ document.addEventListener('mousemove', (event) => {
 
 document.addEventListener('keydown', (event) => {
     if (event.code === 'Space' && playerController) {
-        socket.emit('split', { 
-            id: playerController.id,
-            characters: playerController.characters.map(char => ({
-                x: char.mesh.position.x,
-                z: char.mesh.position.z,
-                size: char.size
-            }))
-        });
+        socket.emit('split');
     }
 });
 
@@ -57,8 +48,6 @@ socket.on('registerPlayer', (data) => {
     playerController = new PlayerController(data.id, 0x3498db, data.position.x, data.position.z, scene, playerName);
     playerController.characters.forEach(char => scene.add(char.mesh));
     console.log("Player created and added to scene", playerController);
-    
-    // Emit player name to server
     socket.emit('setPlayerName', { name: playerName });
 });
 
@@ -70,6 +59,14 @@ socket.on('playerJoined', (data) => {
         players[data.id].playerName = data.name;
         players[data.id].updateNameSprite(data.name);
     }
+});
+
+socket.on('playerInput', (data) => {
+    // Remove this line as we're now sending an object with a 'characters' array
+    // gameWorld.updatePlayerInput(socket.id, data);
+    
+    // Instead, send the entire data object
+    gameWorld.updatePlayerInput(socket.id, data);
 });
 
 socket.on('playerLeft', (data) => {
@@ -110,14 +107,6 @@ socket.on('consumableConsumed', (data) => {
     });
 });
 
-socket.on('playerGrew', (data) => {
-    if (data.id === playerController.id) {
-        playerController.updateCharacters(data.characters);
-    } else if (players[data.id]) {
-        players[data.id].updateCharacters(data.characters);
-    }
-});
-
 socket.on('spawnSharkPools', (data) => {
     data.forEach((sharkPoolData) => {
         const geometry = new THREE.SphereGeometry(sharkPoolData.size, 32, 32);
@@ -134,15 +123,12 @@ socket.on('playerRespawned', (data) => {
 });
 
 socket.on('characterEaten', (data) => {
-    if (playerController.id === data.eatenBy) {
-        playerController.grow();
-    } else if (playerController.id === data.id) {
+    if (playerController.id === data.id) {
         const removedMesh = playerController.removeCharacter(data.eatenCharIndex);
         if (removedMesh) {
             scene.remove(removedMesh);
         }
         if (playerController.characters.length === 0) {
-            // Player completely eaten, respawn
             const newChar = new Character(0x3498db, 0, 0, 1);
             playerController.characters.push(newChar);
             scene.add(newChar.mesh);
@@ -152,29 +138,19 @@ socket.on('characterEaten', (data) => {
 
 socket.on('playerEaten', (data) => {
     alert(`You've been eaten by player ${data.eatenBy}! Respawning...`);
-    // Respawn logic here (if needed)
 });
 
 socket.on('playerSplit', (data) => {
-    const { playerId, newCharacters, allCharacters } = data;
+    const { playerId, allCharacters } = data;
     if (playerId === playerController.id) {
-        // This is our own split, update local representation
         playerController.updateCharacters(allCharacters);
     } else if (players[playerId]) {
-        // This is another player's split
         players[playerId].updateCharacters(allCharacters);
     }
 });
 
-socket.on('playerMerged', (data) => {
-    const { playerId, characters } = data;
-    if (playerId === playerController.id) {
-        // This is our own merge, update local representation
-        playerController.updateCharacters(characters);
-    } else if (players[playerId]) {
-        // This is another player's merge
-        players[playerId].updateCharacters(characters);
-    }
+socket.on('gameState', (data) => {
+    updateGameState(data);
 });
 
 function updateGameState(data) {
@@ -185,7 +161,6 @@ function updateGameState(data) {
             if (!players[id]) {
                 players[id] = new PlayerController(id, 0x3498db, data.players[id].characters[0].x, data.players[id].characters[0].z, scene, data.players[id].name);
             } else {
-                // Update the player's name if it has changed
                 if (players[id].playerName !== data.players[id].name) {
                     players[id].updateNameSprite(data.players[id].name);
                 }
@@ -194,7 +169,6 @@ function updateGameState(data) {
         }
     });
 
-    // Remove disconnected players
     Object.keys(players).forEach((id) => {
         if (!data.players[id]) {
             players[id].characters.forEach(char => scene.remove(char.mesh));
@@ -202,9 +176,36 @@ function updateGameState(data) {
             delete players[id];
         }
     });
+
+    // Update consumables
+    updateConsumables(data.consumables);
+
+    // Update shark pools
+    updateSharkPools(data.sharkPools);
+}
+function updateConsumables(serverConsumables) {
+    consumables.forEach(consumable => scene.remove(consumable));
+    consumables = serverConsumables.map(consumableData => {
+        const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+        const consumable = new THREE.Mesh(geometry, material);
+        consumable.position.set(consumableData.x, 0.5, consumableData.z);
+        scene.add(consumable);
+        return consumable;
+    });
 }
 
-socket.on('gameState', updateGameState);
+function updateSharkPools(serverSharkPools) {
+    sharkPools.forEach(sharkPool => scene.remove(sharkPool));
+    sharkPools = serverSharkPools.map(sharkPoolData => {
+        const geometry = new THREE.SphereGeometry(sharkPoolData.size, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+        const sharkPool = new THREE.Mesh(geometry, material);
+        sharkPool.position.set(sharkPoolData.x, sharkPoolData.size, sharkPoolData.z);
+        scene.add(sharkPool);
+        return sharkPool;
+    });
+}
 
 function animate() {
     requestAnimationFrame(animate);
@@ -212,40 +213,66 @@ function animate() {
         raycaster.setFromCamera(mouse, playerController.camera);
         const intersects = raycaster.intersectObject(ground);
 
+        let targetPosition;
         if (intersects.length > 0) {
-            const targetPosition = intersects[0].point;
-            playerController.updatePosition(targetPosition);
+            targetPosition = intersects[0].point;
+        } else {
+            // If no intersection, project the mouse position to the edge of the game area
+            const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(playerController.camera);
+            const dir = vector.sub(playerController.camera.position).normalize();
+            const distance = (0 - playerController.camera.position.y) / dir.y;
+            targetPosition = playerController.camera.position.clone().add(dir.multiplyScalar(distance));
             
-            // Emit move event for each character
-            socket.emit('move', { 
-                id: playerController.id, 
-                characters: playerController.characters.map(char => ({
-                    x: char.mesh.position.x,
-                    z: char.mesh.position.z,
-                    size: char.size
-                }))
-            });
+            // Clamp the target position to the game boundaries
+            targetPosition.x = Math.max(-250, Math.min(250, targetPosition.x));
+            targetPosition.z = Math.max(-250, Math.min(250, targetPosition.z));
         }
-        // Update player name positions
-        if (playerController) {
-            playerController.updateNamePosition();
-        }
-        Object.values(players).forEach(player => {
-            player.updateNamePosition();
+
+        // Calculate direction and speed for each character
+        const inputData = playerController.characters.map(char => {
+            const dx = targetPosition.x - char.mesh.position.x;
+            const dz = targetPosition.z - char.mesh.position.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+            
+            // Define dead zone and max speed distance
+            const deadZone = 1; // Adjust this value to change the size of the dead zone
+            const maxSpeedDistance = 10; // Adjust this value to change where max speed is reached
+            
+            let speed;
+            if (distance < deadZone) {
+                speed = 0;
+            } else if (distance > maxSpeedDistance) {
+                speed = 1;
+            } else {
+                speed = (distance - deadZone) / (maxSpeedDistance - deadZone);
+            }
+            
+            // Normalize the direction vector
+            const direction = new THREE.Vector2(dx, dz).normalize();
+            
+            return {
+                direction: { x: direction.x, z: direction.y },
+                speed: speed
+            };
         });
 
-        // Update other players
+        // Send player input to server
+        socket.emit('playerInput', { characters: inputData });
+
+        // Update player character positions
+        playerController.updateCharacterPositions();
+
+        // Update player name positions
+        playerController.updateNamePosition();
         Object.values(players).forEach(player => {
-            if (player.id !== playerController.id) {
-                player.updatePosition(player.characters[0].mesh.position);
-            }
+            player.updateNamePosition();
         });
 
         // Update camera position
         const center = playerController.getCharactersCenter();
         playerController.camera.position.set(center.x, playerController.camera.position.y, center.z);
 
-        renderer.render(scene, playerController ? playerController.camera : camera);
+        renderer.render(scene, playerController.camera);
     }
 }
 

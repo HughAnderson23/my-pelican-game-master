@@ -4,6 +4,7 @@ export class GameWorld {
         this.mergeTimeout = 10000; // 10 seconds before merging
         this.sharkPools = [];
         this.maxSharkPools = 7;
+        this.characterIdCounter = 0;
     }
 
     addPlayer(id, color) {
@@ -11,7 +12,7 @@ export class GameWorld {
             id, 
             color, 
             name: 'Anonymous',
-            characters: [{ x: 0, z: 0, size: 1 }],
+            characters: [{ x: 0, z: 0, size: 1, direction: { x: 0, z: 0 }, speed: 0 }],
             lastSplitTime: 0
         };
     }
@@ -26,12 +27,65 @@ export class GameWorld {
         delete this.players[id];
     }
 
-    updatePlayerPosition(id, characters) {
-        if (this.players[id]) {
-            this.players[id].characters = characters;
-            return this.checkForMerge(id);
+    updatePlayerInput(id, data) {
+        const player = this.players[id];
+        if (player && data.characters) {
+            player.characters.forEach((char, index) => {
+                if (data.characters[index]) {
+                    char.direction = data.characters[index].direction;
+                    char.speed = data.characters[index].speed;
+                }
+            });
         }
-        return false;
+    }
+
+    update(deltaTime) {
+        for (const id in this.players) {
+            this.updatePlayerPosition(id, deltaTime);
+            this.updateSplitVelocity(id, deltaTime);
+            this.checkForMerge(id);
+        }
+    }
+
+    updatePlayerPosition(id, deltaTime) {
+        const player = this.players[id];
+        if (player) {
+            const baseSpeed = 20; // Adjust this value to change base movement speed
+            player.characters.forEach(char => {
+                if (char.direction && char.speed !== undefined) {
+                    const speed = baseSpeed * char.speed;
+                    char.x += char.direction.x * speed * deltaTime;
+                    char.z += char.direction.z * speed * deltaTime; // Changed y to z here
+
+                    // Add split velocity to the movement
+                    if (char.splitVelocity) {
+                        char.x += char.splitVelocity.x * deltaTime;
+                        char.z += char.splitVelocity.z * deltaTime;
+                    }
+
+                    // Ensure the character stays within the game boundaries
+                    char.x = Math.max(-250, Math.min(250, char.x));
+                    char.z = Math.max(-250, Math.min(250, char.z));
+                }
+            });
+        }
+    }
+
+    updateSplitVelocity(id, deltaTime) {
+        if (this.players[id]) {
+            this.players[id].characters.forEach(char => {
+                if (char.splitVelocity) {
+                    // Reduce split velocity over time
+                    char.splitVelocity.x *= 0.95;
+                    char.splitVelocity.z *= 0.95;
+
+                    // If split velocity is very small, remove it
+                    if (Math.abs(char.splitVelocity.x) < 0.1 && Math.abs(char.splitVelocity.z) < 0.1) {
+                        delete char.splitVelocity;
+                    }
+                }
+            });
+        }
     }
 
     growPlayer(id, amount) {
@@ -58,16 +112,30 @@ export class GameWorld {
                 const char2 = player.characters[j];
                 const distance = Math.sqrt(Math.pow(char1.x - char2.x, 2) + Math.pow(char1.z - char2.z, 2));
                 if (distance < char1.size + char2.size) {
-                    // Merge these characters
+                    // Start merging process
+                    if (!char1.mergeTarget) {
+                        char1.mergeTarget = { x: (char1.x + char2.x) / 2, z: (char1.z + char2.z) / 2 };
+                        char2.mergeTarget = char1.mergeTarget;
+                    }
+                }
+                if (char1.mergeTarget && distance < 1) {
+                    // Complete merge
                     char1.size = Math.sqrt(Math.pow(char1.size, 2) + Math.pow(char2.size, 2));
-                    char1.x = (char1.x + char2.x) / 2;
-                    char1.z = (char1.z + char2.z) / 2;
+                    char1.x = char1.mergeTarget.x;
+                    char1.z = char1.mergeTarget.z;
+                    delete char1.mergeTarget;
                     merged.push(j);
                 }
             }
         }
         player.characters = player.characters.filter((_, index) => !merged.includes(index));
         return merged.length > 0;
+    }
+
+
+    generateCharacterId() {
+        this.characterIdCounter += 1;
+        return `char_${this.characterIdCounter}`;
     }
 
     splitPlayer(id) {
@@ -81,14 +149,21 @@ export class GameWorld {
                     const newSize = char.size / 2;
                     char.size = newSize;
     
-                    const angle = Math.random() * Math.PI * 2;
+                    const angle = Math.atan2(char.direction.z, char.direction.x);
                     const distance = newSize * 4; // Increased distance for more visible separation
                     const newChar = {
+                        id: this.generateCharacterId(),
                         x: char.x + Math.cos(angle) * distance,
                         z: char.z + Math.sin(angle) * distance,
-                        size: newSize
+                        size: newSize,
+                        direction: { x: char.direction.x, z: char.direction.z },
+                        speed: char.speed,
+                        splitVelocity: { x: Math.cos(angle) * 20, z: Math.sin(angle) * 20 } // Add split velocity
                     };
                     newCharacters.push(newChar);
+                    
+                    // Add split velocity to the original character in the opposite direction
+                    char.splitVelocity = { x: -Math.cos(angle) * 20, z: -Math.sin(angle) * 20 };
                 }
             });
             if (newCharacters.length > 0) {
@@ -116,7 +191,8 @@ export class GameWorld {
                 eaten.characters.push({
                     x: Math.random() * 500 - 250,
                     z: Math.random() * 500 - 250,
-                    size: 1
+                    size: 1,
+                    direction: { x: 0, z: 0 }
                 });
             }
         }
@@ -162,7 +238,8 @@ export class GameWorld {
             this.players[id].characters = [{
                 x: Math.random() * 500 - 250,
                 z: Math.random() * 500 - 250,
-                size: 1
+                size: 1,
+                direction: { x: 0, z: 0 }
             }];
         }
     }
