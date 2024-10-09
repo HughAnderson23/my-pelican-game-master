@@ -5,6 +5,7 @@ export class GameWorld {
         this.sharkPools = [];
         this.maxSharkPools = 7;
         this.characterIdCounter = 0;
+        this.consumables = [];
     }
 
     addPlayer(id, color) {
@@ -247,4 +248,29 @@ export class GameWorld {
     getSharkPools() {
         return this.sharkPools;
     }
+
+    addConsumable(consumable) {
+        this.consumables.push(consumable);
+      }
+    
+      removeConsumable(consumable) {
+        const index = this.consumables.findIndex(c => c.x === consumable.x && c.z === consumable.z);
+        if (index !== -1) {
+          this.consumables.splice(index, 1);
+        }
+      }
+    
+      getConsumables() {
+        return this.consumables;
+      }
+    
+      checkConsumableCollision(character) {
+        for (const consumable of this.consumables) {
+          const dist = Math.sqrt(Math.pow(character.x - consumable.x, 2) + Math.pow(character.z - consumable.z, 2));
+          if (dist < character.size) {
+            return consumable;
+          }
+        }
+        return null;
+      }
 }

@@ -43,7 +43,6 @@ app.get('/game', (req, res) => {
 });
 
 const gameWorld = new GameWorld();
-let consumables = [];
 
 function generateConsumable() {
     const x = Math.random() * 500 - 250;
@@ -53,7 +52,7 @@ function generateConsumable() {
 
 function generateInitialConsumables() {
     for (let i = 0; i < 40; i++) {
-        consumables.push(generateConsumable());
+        gameWorld.addConsumable(generateConsumable());
     }
 }
 
@@ -77,7 +76,7 @@ function gameLoop() {
 
     io.emit('gameState', {
         players: gameWorld.getPlayers(),
-        consumables: consumables,
+        consumables: gameWorld.getConsumables(),
         sharkPools: gameWorld.getSharkPools()
     });
 }
@@ -86,21 +85,17 @@ setInterval(gameLoop, 1000 / TICK_RATE);
 
 function checkConsumableCollisions() {
     for (const [playerId, player] of Object.entries(gameWorld.getPlayers())) {
-        for (let i = consumables.length - 1; i >= 0; i--) {
-            const consumable = consumables[i];
-            for (const character of player.characters) {
-                const dist = Math.sqrt(Math.pow(character.x - consumable.x, 2) + Math.pow(character.z - consumable.z, 2));
-                if (dist < character.size) {
-                    consumables.splice(i, 1);
-                    io.emit('consumableConsumed', { id: playerId, x: consumable.x, z: consumable.z });
-                    setTimeout(() => {
-                        const newConsumable = generateConsumable();
-                        consumables.push(newConsumable);
-                        io.emit('spawnConsumable', newConsumable);
-                    }, 10000);
-                    gameWorld.growPlayer(playerId, character.size * 0.1);
-                    break;
-                }
+        for (const character of player.characters) {
+            const consumedConsumable = gameWorld.checkConsumableCollision(character);
+            if (consumedConsumable) {
+                gameWorld.removeConsumable(consumedConsumable);
+                io.emit('consumableConsumed', { id: playerId, x: consumedConsumable.x, z: consumedConsumable.z });
+                setTimeout(() => {
+                    const newConsumable = generateConsumable();
+                    gameWorld.addConsumable(newConsumable);
+                    io.emit('spawnConsumable', newConsumable);
+                }, 10000);
+                gameWorld.growPlayer(playerId, character.size * 0.1);
             }
         }
     }
@@ -153,8 +148,11 @@ io.on('connection', (socket) => {
         position: { x: 0, z: 0 }
     });
 
-    socket.emit('spawnConsumables', consumables);
-    socket.emit('spawnSharkPools', gameWorld.getSharkPools());
+    socket.emit('gameState', {
+        players: gameWorld.getPlayers(),
+        consumables: gameWorld.getConsumables(),
+        sharkPools: gameWorld.getSharkPools()
+    });
 
     const existingPlayers = gameWorld.getPlayers();
     for (const playerId in existingPlayers) {

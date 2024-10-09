@@ -61,14 +61,6 @@ socket.on('playerJoined', (data) => {
     }
 });
 
-socket.on('playerInput', (data) => {
-    // Remove this line as we're now sending an object with a 'characters' array
-    // gameWorld.updatePlayerInput(socket.id, data);
-    
-    // Instead, send the entire data object
-    gameWorld.updatePlayerInput(socket.id, data);
-});
-
 socket.on('playerLeft', (data) => {
     if (players[data.id]) {
         players[data.id].characters.forEach(char => scene.remove(char.mesh));
@@ -77,50 +69,50 @@ socket.on('playerLeft', (data) => {
     }
 });
 
-socket.on('spawnConsumables', (data) => {
-    data.forEach((consumableData) => {
-        const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-        const consumable = new THREE.Mesh(geometry, material);
-        consumable.position.set(consumableData.x, 0.5, consumableData.z);
-        scene.add(consumable);
-        consumables.push(consumable);
-    });
-});
-
-socket.on('spawnConsumable', (data) => {
-    const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-    const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-    const consumable = new THREE.Mesh(geometry, material);
-    consumable.position.set(data.x, 0.5, data.z);
-    scene.add(consumable);
-    consumables.push(consumable);
-});
-
-socket.on('consumableConsumed', (data) => {
-    consumables = consumables.filter((consumable) => {
-        if (consumable.position.x === data.x && consumable.position.z === data.z) {
-            scene.remove(consumable);
-            return false;
-        }
-        return true;
-    });
-});
-
-socket.on('spawnSharkPools', (data) => {
-    data.forEach((sharkPoolData) => {
-        const geometry = new THREE.SphereGeometry(sharkPoolData.size, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
-        const sharkPool = new THREE.Mesh(geometry, material);
-        sharkPool.position.set(sharkPoolData.x, sharkPoolData.size, sharkPoolData.z);
-        scene.add(sharkPool);
-        sharkPools.push(sharkPool);
-    });
-});
-
 socket.on('playerRespawned', (data) => {
     playerController.updateCharacters(data.characters);
 });
+
+// socket.on('spawnConsumables', (data) => {
+//     data.forEach((consumableData) => {
+//         const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+//         const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+//         const consumable = new THREE.Mesh(geometry, material);
+//         consumable.position.set(consumableData.x, 0.5, consumableData.z);
+//         scene.add(consumable);
+//         consumables.push(consumable);
+//     });
+// });
+
+// socket.on('spawnConsumable', (data) => {
+//     const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+//     const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
+//     const consumable = new THREE.Mesh(geometry, material);
+//     consumable.position.set(data.x, 0.5, data.z);
+//     scene.add(consumable);
+//     consumables.push(consumable);
+// });
+
+// socket.on('consumableConsumed', (data) => {
+//     consumables = consumables.filter((consumable) => {
+//         if (consumable.position.x === data.x && consumable.position.z === data.z) {
+//             scene.remove(consumable);
+//             return false;
+//         }
+//         return true;
+//     });
+// });
+
+// socket.on('spawnSharkPools', (data) => {
+//     data.forEach((sharkPoolData) => {
+//         const geometry = new THREE.SphereGeometry(sharkPoolData.size, 32, 32);
+//         const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+//         const sharkPool = new THREE.Mesh(geometry, material);
+//         sharkPool.position.set(sharkPoolData.x, sharkPoolData.size, sharkPoolData.z);
+//         scene.add(sharkPool);
+//         sharkPools.push(sharkPool);
+//     });
+// });
 
 socket.on('characterEaten', (data) => {
     if (playerController.id === data.id) {
@@ -183,15 +175,20 @@ function updateGameState(data) {
     // Update shark pools
     updateSharkPools(data.sharkPools);
 }
+
 function updateConsumables(serverConsumables) {
+    // Remove all existing consumables from the scene
     consumables.forEach(consumable => scene.remove(consumable));
-    consumables = serverConsumables.map(consumableData => {
+    consumables = [];
+
+    // Add new consumables based on server state
+    serverConsumables.forEach(consumableData => {
         const geometry = new THREE.SphereGeometry(0.5, 32, 32);
         const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
         const consumable = new THREE.Mesh(geometry, material);
         consumable.position.set(consumableData.x, 0.5, consumableData.z);
         scene.add(consumable);
-        return consumable;
+        consumables.push(consumable);
     });
 }
 
