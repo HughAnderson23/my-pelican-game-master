@@ -104,6 +104,13 @@ export class PlayerController {
         this.characters.forEach(char => char.grow());
     }
 
+    growCharacter(index, amount) {
+        if (this.characters[index]) {
+            this.characters[index].size += amount;
+            this.characters[index].mesh.scale.set(this.characters[index].size, this.characters[index].size, this.characters[index].size);
+        }
+    }
+
     removeCharacter(index) {
         if (index >= 0 && index < this.characters.length) {
             const removedChar = this.characters.splice(index, 1)[0];

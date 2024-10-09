@@ -85,19 +85,24 @@ setInterval(gameLoop, 1000 / TICK_RATE);
 
 function checkConsumableCollisions() {
     for (const [playerId, player] of Object.entries(gameWorld.getPlayers())) {
-        for (const character of player.characters) {
+        player.characters.forEach((character, index) => {
             const consumedConsumable = gameWorld.checkConsumableCollision(character);
             if (consumedConsumable) {
                 gameWorld.removeConsumable(consumedConsumable);
-                io.emit('consumableConsumed', { id: playerId, x: consumedConsumable.x, z: consumedConsumable.z });
+                io.emit('consumableConsumed', { 
+                    id: playerId, 
+                    characterIndex: index,
+                    x: consumedConsumable.x, 
+                    z: consumedConsumable.z 
+                });
                 setTimeout(() => {
                     const newConsumable = generateConsumable();
                     gameWorld.addConsumable(newConsumable);
                     io.emit('spawnConsumable', newConsumable);
                 }, 10000);
-                gameWorld.growPlayer(playerId, character.size * 0.1);
+                gameWorld.growCharacter(playerId, index, character.size * 0.1);
             }
-        }
+        });
     }
 }
 

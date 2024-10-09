@@ -89,11 +89,9 @@ export class GameWorld {
         }
     }
 
-    growPlayer(id, amount) {
-        if (this.players[id]) {
-            this.players[id].characters.forEach(char => {
-                char.size += amount;
-            });
+    growCharacter(id, characterIndex, amount) {
+        if (this.players[id] && this.players[id].characters[characterIndex]) {
+            this.players[id].characters[characterIndex].size += amount;
         }
     }
 
@@ -266,11 +264,11 @@ export class GameWorld {
     
       checkConsumableCollision(character) {
         for (const consumable of this.consumables) {
-          const dist = Math.sqrt(Math.pow(character.x - consumable.x, 2) + Math.pow(character.z - consumable.z, 2));
-          if (dist < character.size) {
-            return consumable;
-          }
+            const dist = Math.sqrt(Math.pow(character.x - consumable.x, 2) + Math.pow(character.z - consumable.z, 2));
+            if (dist < character.size) {
+                return consumable;
+            }
         }
         return null;
-      }
+    }
 }

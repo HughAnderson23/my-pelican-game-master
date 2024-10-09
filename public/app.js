@@ -73,47 +73,6 @@ socket.on('playerRespawned', (data) => {
     playerController.updateCharacters(data.characters);
 });
 
-// socket.on('spawnConsumables', (data) => {
-//     data.forEach((consumableData) => {
-//         const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-//         const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-//         const consumable = new THREE.Mesh(geometry, material);
-//         consumable.position.set(consumableData.x, 0.5, consumableData.z);
-//         scene.add(consumable);
-//         consumables.push(consumable);
-//     });
-// });
-
-// socket.on('spawnConsumable', (data) => {
-//     const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-//     const material = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-//     const consumable = new THREE.Mesh(geometry, material);
-//     consumable.position.set(data.x, 0.5, data.z);
-//     scene.add(consumable);
-//     consumables.push(consumable);
-// });
-
-// socket.on('consumableConsumed', (data) => {
-//     consumables = consumables.filter((consumable) => {
-//         if (consumable.position.x === data.x && consumable.position.z === data.z) {
-//             scene.remove(consumable);
-//             return false;
-//         }
-//         return true;
-//     });
-// });
-
-// socket.on('spawnSharkPools', (data) => {
-//     data.forEach((sharkPoolData) => {
-//         const geometry = new THREE.SphereGeometry(sharkPoolData.size, 32, 32);
-//         const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
-//         const sharkPool = new THREE.Mesh(geometry, material);
-//         sharkPool.position.set(sharkPoolData.x, sharkPoolData.size, sharkPoolData.z);
-//         scene.add(sharkPool);
-//         sharkPools.push(sharkPool);
-//     });
-// });
-
 socket.on('characterEaten', (data) => {
     if (playerController.id === data.id) {
         const removedMesh = playerController.removeCharacter(data.eatenCharIndex);
@@ -143,6 +102,22 @@ socket.on('playerSplit', (data) => {
 
 socket.on('gameState', (data) => {
     updateGameState(data);
+});
+
+socket.on('consumableConsumed', (data) => {
+    if (playerController && playerController.id === data.id) {
+        playerController.growCharacter(data.characterIndex, playerController.characters[data.characterIndex].size * 0.1);
+    } else if (players[data.id]) {
+        players[data.id].growCharacter(data.characterIndex, players[data.id].characters[data.characterIndex].size * 0.1);
+    }
+    
+    consumables = consumables.filter((consumable) => {
+        if (consumable.position.x === data.x && consumable.position.z === data.z) {
+            scene.remove(consumable);
+            return false;
+        }
+        return true;
+    });
 });
 
 function updateGameState(data) {
